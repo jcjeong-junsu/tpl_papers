@@ -1,0 +1,31 @@
+name: Daily Transplant Paper
+
+on:
+  schedule:
+    # 매일 23:00 UTC = 08:00 KST (다음날)
+    - cron: '0 23 * * *'
+  workflow_dispatch: # 수동 실행 가능
+
+jobs:
+  send-paper:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run daily paper script
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          UPSTASH_REDIS_URL: ${{ secrets.UPSTASH_REDIS_URL }}
+          UPSTASH_REDIS_TOKEN: ${{ secrets.UPSTASH_REDIS_TOKEN }}
+        run: python daily_run.py
