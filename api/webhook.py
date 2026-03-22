@@ -10,8 +10,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import httpx
 
-from src.interpret import answer_question
-from src.storage import get_current_paper
+from src.fetch_paper import get_todays_paper
+from src.interpret import answer_question, interpret_paper
+from src.storage import get_current_paper, save_paper
+from src.telegram_sender import send_daily_paper
 
 
 def _send_telegram_message(chat_id: int, text: str) -> None:
@@ -46,8 +48,24 @@ def _handle_update(body: dict) -> None:
             "👋 안녕하세요! 이식 연구 봇입니다.\n\n"
             "매일 아침 최신 이식 관련 논문을 보내드립니다.\n"
             "논문에 대한 질문을 자유롭게 보내주세요!\n\n"
-            "📋 /paper - 현재 논문 정보 보기",
+            "📋 /paper - 현재 논문 정보 보기\n"
+            "🆕 /new - 새 논문 바로 받기",
         )
+        return
+
+    # /new 명령어 - 새 논문 바로 받기
+    if text == "/new":
+        _send_telegram_message(chat_id, "🔍 새 논문을 검색하고 있습니다...")
+        try:
+            paper = get_todays_paper()
+            if not paper:
+                _send_telegram_message(chat_id, "최근 이식 관련 논문을 찾지 못했습니다.")
+                return
+            interpretation = interpret_paper(paper)
+            save_paper(paper, interpretation)
+            send_daily_paper(paper, interpretation)
+        except Exception as e:
+            _send_telegram_message(chat_id, f"오류가 발생했습니다: {str(e)[:200]}")
         return
 
     # /paper 명령어 - 현재 논문 요약
